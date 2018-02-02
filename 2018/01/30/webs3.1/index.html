@@ -1,0 +1,517 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>Redis未授权访问漏洞学习 | 让子弹飞一会</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="yfzheng">
+    
+
+    
+    <meta name="description" content="欢迎来我的博客，这是我在学习redis未授权访问漏洞的一些操作与收获。学习的目的是为了更好的了解这个漏洞，然后去防御它，而不是为了危害他人。实验背景：1.VMware 12 pro2.fedora 273.两台虚拟机A,B 了解漏洞redis是什么？Redis是一个开源的使用ANSI C语言编写、支持网络、可基于内存亦可持久化的日志型、Key-Value数据库，并提供多种语言的API。Redis的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis未授权访问漏洞学习">
+<meta property="og:url" content="http://yoursite.com/2018/01/30/webs3.1/index.html">
+<meta property="og:site_name" content="让子弹飞一会">
+<meta property="og:description" content="欢迎来我的博客，这是我在学习redis未授权访问漏洞的一些操作与收获。学习的目的是为了更好的了解这个漏洞，然后去防御它，而不是为了危害他人。实验背景：1.VMware 12 pro2.fedora 273.两台虚拟机A,B 了解漏洞redis是什么？Redis是一个开源的使用ANSI C语言编写、支持网络、可基于内存亦可持久化的日志型、Key-Value数据库，并提供多种语言的API。Redis的">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-e391fd39fdc6f740.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-4434caae5dae2fed.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-e56d6d9f5497cff7.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-335b736ef07c9394.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-65443d479133abe5.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-205b5809f9a544b3.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-2b58298ac9bd73d8.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-c089d200cdd11488.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:updated_time" content="2018-02-02T07:47:01.102Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Redis未授权访问漏洞学习">
+<meta name="twitter:description" content="欢迎来我的博客，这是我在学习redis未授权访问漏洞的一些操作与收获。学习的目的是为了更好的了解这个漏洞，然后去防御它，而不是为了危害他人。实验背景：1.VMware 12 pro2.fedora 273.两台虚拟机A,B 了解漏洞redis是什么？Redis是一个开源的使用ANSI C语言编写、支持网络、可基于内存亦可持久化的日志型、Key-Value数据库，并提供多种语言的API。Redis的">
+<meta name="twitter:image" content="http://upload-images.jianshu.io/upload_images/10457296-e391fd39fdc6f740.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+
+    
+    <link rel="alternative" href="/atom.xml" title="让子弹飞一会" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/jacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/jacman.jpg">
+    
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+  <body>
+    <header>
+      
+<div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.png" alt="让子弹飞一会" title="让子弹飞一会"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="让子弹飞一会">让子弹飞一会</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:yoursite.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2018/01/30/webs3.1/" title="Redis未授权访问漏洞学习" itemprop="url">Redis未授权访问漏洞学习</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="/about" title="yfzheng" target="_blank" itemprop="author">yfzheng</a>
+		
+  <p class="article-time">
+    <time datetime="2018-01-30T06:30:41.000Z" itemprop="datePublished"> 发表于 2018-01-30</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#了解漏洞"><span class="toc-number">1.</span> <span class="toc-text">了解漏洞</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#redis是什么？"><span class="toc-number">1.1.</span> <span class="toc-text">redis是什么？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#redis未授权访问漏洞产生的原因是什么？"><span class="toc-number">1.2.</span> <span class="toc-text">redis未授权访问漏洞产生的原因是什么？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#分析漏洞原理"><span class="toc-number">2.</span> <span class="toc-text">分析漏洞原理</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#漏洞原理及其危害"><span class="toc-number">2.1.</span> <span class="toc-text">漏洞原理及其危害</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#漏洞利用条件"><span class="toc-number">2.2.</span> <span class="toc-text">漏洞利用条件</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#漏洞的重现和利用"><span class="toc-number">3.</span> <span class="toc-text">漏洞的重现和利用</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#安装redis"><span class="toc-number">3.1.</span> <span class="toc-text">安装redis</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#根据漏洞原理配置redis"><span class="toc-number">3.2.</span> <span class="toc-text">根据漏洞原理配置redis</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#安装ssh服务端"><span class="toc-number">3.3.</span> <span class="toc-text">安装ssh服务端</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#开启ssh公钥登录，并验证是否正确开启。"><span class="toc-number">3.4.</span> <span class="toc-text">开启ssh公钥登录，并验证是否正确开启。</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#对漏洞进行利用"><span class="toc-number">3.5.</span> <span class="toc-text">对漏洞进行利用</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#建议修复方案"><span class="toc-number">4.</span> <span class="toc-text">建议修复方案</span></a></li></ol>
+		
+		</div>
+		
+		<p>欢迎来我的博客，这是我在学习redis未授权访问漏洞的一些操作与收获。学习的目的是为了更好的了解这个漏洞，然后去防御它，而不是为了危害他人。<br>实验背景：<br>1.VMware 12 pro<br>2.fedora 27<br>3.两台虚拟机A,B</p>
+<h2 id="了解漏洞"><a href="#了解漏洞" class="headerlink" title="了解漏洞"></a>了解漏洞</h2><h3 id="redis是什么？"><a href="#redis是什么？" class="headerlink" title="redis是什么？"></a>redis是什么？</h3><p>Redis是一个开源的使用ANSI C语言编写、支持网络、可基于内存亦可持久化的日志型、Key-Value数据库，并提供多种语言的API。Redis的外围由一个键、值映射的字典构成。为高速低负载存储系统提供了一种解决方案。</p>
+<h3 id="redis未授权访问漏洞产生的原因是什么？"><a href="#redis未授权访问漏洞产生的原因是什么？" class="headerlink" title="redis未授权访问漏洞产生的原因是什么？"></a>redis未授权访问漏洞产生的原因是什么？</h3><p>Redis 默认情况下，会绑定在 0.0.0.0:6379，这样将会将 Redis 服务暴露到公网上，如果在没有开启认证的情况下，可以导致任意用户在可以访问目标服务器的情况下未授权访问 Redis 以及读取 Redis的数据。攻击者在未授权访问 Redis 的情况下可以利用 Redis 的相关方法，可以成功在 Redis 服务器上写入公钥，进而可以使用对应私钥直接登录目标服务器。</p>
+<h2 id="分析漏洞原理"><a href="#分析漏洞原理" class="headerlink" title="分析漏洞原理"></a>分析漏洞原理</h2><h3 id="漏洞原理及其危害"><a href="#漏洞原理及其危害" class="headerlink" title="漏洞原理及其危害"></a>漏洞原理及其危害</h3><p>redis设计之初仅用于本机加快数据存取的速度，或者说，开发独立的权限认证系统开销过于冗杂，所以redis默认并未开启权限认证机制，未区分普通用户和管理员账户，使得暴漏在公网上的redis服务器可以被任意主机连接执行redis内置命令。若配合ssh，可以实现root远程登录，危害十分巨大。</p>
+<h3 id="漏洞利用条件"><a href="#漏洞利用条件" class="headerlink" title="漏洞利用条件"></a>漏洞利用条件</h3><p>a)以root权限运行redis服务<br>b)redis服务器暴露在公网环境<br>c)redis服务允许除本机之外的所有主机登录</p>
+<h2 id="漏洞的重现和利用"><a href="#漏洞的重现和利用" class="headerlink" title="漏洞的重现和利用"></a>漏洞的重现和利用</h2><h3 id="安装redis"><a href="#安装redis" class="headerlink" title="安装redis"></a>安装redis</h3><p>可以直接通过软件源安装<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo yum install redis</span><br></pre></td></tr></table></figure></p>
+<h3 id="根据漏洞原理配置redis"><a href="#根据漏洞原理配置redis" class="headerlink" title="根据漏洞原理配置redis"></a>根据漏洞原理配置redis</h3><p>先打开redis的配置文件</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo vim /etc/redis.conf</span><br></pre></td></tr></table></figure>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-e391fd39fdc6f740.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p>bind的意思不是绑定外部服务器的IP，而是绑定本机可以接受访问的IP</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-4434caae5dae2fed.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p>密码设置为没有。（在requirepass前面加注释号）</p>
+<p>开启redis服务<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo redis-server /etc/redis.conf</span><br></pre></td></tr></table></figure></p>
+<p>在打开虚拟机后输入ifconfig查看ip地址，相互ping得通即可继续实验</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-e56d6d9f5497cff7.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-335b736ef07c9394.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p>在另外一台虚拟机上连接该虚拟机，若成功则环境搭配成功。</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-65443d479133abe5.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<h3 id="安装ssh服务端"><a href="#安装ssh服务端" class="headerlink" title="安装ssh服务端"></a>安装ssh服务端</h3><p>系统应该默认安装了，没有安装的话可以执行下面命令<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo yum install openssh-server</span><br></pre></td></tr></table></figure></p>
+<h3 id="开启ssh公钥登录，并验证是否正确开启。"><a href="#开启ssh公钥登录，并验证是否正确开启。" class="headerlink" title="开启ssh公钥登录，并验证是否正确开启。"></a>开启ssh公钥登录，并验证是否正确开启。</h3><p>先打开ssh的配置文件<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo vim /etc/ssh/sshd_config</span><br></pre></td></tr></table></figure></p>
+<p>虚拟机A找到RSAAuthentication、PubkeyAuthentication、AuthorizedKeyFiles、StrictModes所在的行，如果被#注释了，就取消#号，改为如下配置：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ RSAAuthentication yes   开启使用RSA算法的基于rhosts的安全验证；</span><br><span class="line">$ PubkeyAuthentication yes    开启公钥验证；</span><br><span class="line">$ AuthorizedKeyFiles .ssh/authorized_keys   后面的目录，是你上传的公钥所保存的文件；</span><br><span class="line">$ StrictModes no  设置关闭ssh在接收登录请求之前先检查用户家目录和rhosts文件的权限和所有权。</span><br></pre></td></tr></table></figure></p>
+<p>之后执行<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo service sshd start （抑或是restart）</span><br></pre></td></tr></table></figure></p>
+<h3 id="对漏洞进行利用"><a href="#对漏洞进行利用" class="headerlink" title="对漏洞进行利用"></a>对漏洞进行利用</h3><p>（提示：利用redis写入ssh证书并登录）<br>1.虚拟机B生成公私钥文件，并将公钥文件内容重定向至其他文件<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ ssh-keygen</span><br><span class="line">$ (<span class="built_in">echo</span> -e <span class="string">"\n\n"</span>; cat id_rsa.pub; <span class="built_in">echo</span> -e <span class="string">"\n\n"</span>) &gt; foo.txt</span><br></pre></td></tr></table></figure></p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-205b5809f9a544b3.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p>2.启动fedora redis服务<br>3.使用ssh.txt的内容作为标准输入，执行redis –cli命令，登录成功后使用set dir命令改变目录，设置文件名称，保存生成公钥文件。</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-2b58298ac9bd73d8.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p>4.之后直接用ssh登录虚拟机B（这时候应该是root权限），这就相当于入侵了别人的电脑</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-c089d200cdd11488.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<h2 id="建议修复方案"><a href="#建议修复方案" class="headerlink" title="建议修复方案"></a>建议修复方案</h2><p>1、指定redis服务使用的网卡 （需要重启redis才能生效）<br>在 redis.conf 文件中找到 “# bind 127.0.0.1” ，把前面的#号去掉，然后保存。注：修改后只有本机才能访问Redis。</p>
+<p>2、设置访问密码 （需要重启redis才能生效）<br>在 redis.conf 中找到“requirepass”字段，在后面填上你需要的密码，Redis客户端也需要使用此密码来访问Redis服务。</p>
+<p>3、修改Redis服务运行账号 （需要重启redis才能生效）<br>请以较低权限账号运行Redis服务，且禁用该账号的登录权限。另外可以限制攻击者往敏感写入文件，但是Redis数据还是能被黑客访问到，或者被黑客恶意删除。</p>
+<p>4、设置防火墙策略<br>如果正常业务中Redis服务需要被其他服务器来访问，可以设置iptables策略仅允许指定的IP来访问Redis服务。</p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://yoursite.com/2018/01/30/webs3.1/" data-title="Redis未授权访问漏洞学习 | 让子弹飞一会" data-tsina="" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+
+<div class="next">
+<a href="/2018/01/29/hello-world/"  title="Hello World">
+ <strong>下一篇：</strong><br/> 
+ <span>Hello World
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#了解漏洞"><span class="toc-number">1.</span> <span class="toc-text">了解漏洞</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#redis是什么？"><span class="toc-number">1.1.</span> <span class="toc-text">redis是什么？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#redis未授权访问漏洞产生的原因是什么？"><span class="toc-number">1.2.</span> <span class="toc-text">redis未授权访问漏洞产生的原因是什么？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#分析漏洞原理"><span class="toc-number">2.</span> <span class="toc-text">分析漏洞原理</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#漏洞原理及其危害"><span class="toc-number">2.1.</span> <span class="toc-text">漏洞原理及其危害</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#漏洞利用条件"><span class="toc-number">2.2.</span> <span class="toc-text">漏洞利用条件</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#漏洞的重现和利用"><span class="toc-number">3.</span> <span class="toc-text">漏洞的重现和利用</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#安装redis"><span class="toc-number">3.1.</span> <span class="toc-text">安装redis</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#根据漏洞原理配置redis"><span class="toc-number">3.2.</span> <span class="toc-text">根据漏洞原理配置redis</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#安装ssh服务端"><span class="toc-number">3.3.</span> <span class="toc-text">安装ssh服务端</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#开启ssh公钥登录，并验证是否正确开启。"><span class="toc-number">3.4.</span> <span class="toc-text">开启ssh公钥登录，并验证是否正确开启。</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#对漏洞进行利用"><span class="toc-number">3.5.</span> <span class="toc-text">对漏洞进行利用</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#建议修复方案"><span class="toc-number">4.</span> <span class="toc-text">建议修复方案</span></a></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+
+
+  
+
+  
+
+  <div class="linkslist">
+  <p class="asidetitle">友情链接</p>
+    <ul>
+        
+          <li>
+            
+            	<a href="https://luckyjq.github.io/" target="_blank" title="LuckyQ">LuckyQ</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="https://rliyuqing.github.io/" target="_blank" title="折戟">折戟</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="https://teazmh.github.io/" target="_blank" title="Tea_Mh">Tea_Mh</a>
+            
+          </li>
+        
+    </ul>
+</div>
+
+  
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+  <div class="weiboshow">
+  <p class="asidetitle">新浪微博</p>
+    <iframe width="100%" height="119" class="share_self"  frameborder="0" scrolling="no" src="http://widget.weibo.com/weiboshow/index.php?language=&width=0&height=119&fansRow=2&ptype=1&speed=0&skin=9&isTitle=1&noborder=1&isWeibo=0&isFans=0&uid=&verifier=&dpc=1"></iframe>
+</div>
+
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<section class="info">
+		<p> Hello ,I&#39;m yfzheng in XD. <br/>
+			This is my blog,believe it or not.</p>
+	</section>
+	 
+	<div class="social-font" class="clearfix">
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2018 
+		
+		<a href="/about" target="_blank" title="yfzheng">yfzheng</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+<script src="/js/jquery.qrcode-0.12.0.min.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+        getSize();
+        if (myWidth >= 1024) {
+          c.click();
+        }
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<div class="hoverqrcode clearfix"></div>',
+  '<a class="overlay" id="qrcode"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+
+  $('.hoverqrcode').hide();
+
+  var myWidth = 0;
+  function updatehoverqrcode(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+    var qrsize = myWidth > 1024 ? 200:100;
+    var options = {render: 'image', size: qrsize, fill: '#2ca6cb', text: url, radius: 0.5, quiet: 1};
+    var p = $('.article-share-qrcode').position();
+    $('.hoverqrcode').empty().css('width', qrsize).css('height', qrsize)
+                          .css('left', p.left-qrsize/2+20).css('top', p.top-qrsize-10)
+                          .qrcode(options);
+  };
+  $(window).resize(function(){
+    $('.hoverqrcode').hide();
+  });
+  $('.article-share-qrcode').click(function(){
+    updatehoverqrcode();
+    $('.hoverqrcode').toggle();
+  });
+  $('.article-share-qrcode').hover(function(){}, function(){
+      $('.hoverqrcode').hide();
+  });
+});   
+</script>
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?e6d1f421bbc9962127a50488f9ed37d1";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>
