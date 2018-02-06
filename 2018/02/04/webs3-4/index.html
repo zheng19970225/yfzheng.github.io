@@ -11,12 +11,12 @@
     
 
     
-    <meta name="description" content="欢迎来我的博客，这是我在学习struts2-052漏洞学习的一些操作与收获。学习的目的是为了更好的了解这个漏洞，然后去防御它，而不是为了危害他人。实验背景：1.VMware 12 pro2.fedora 27 了解漏洞heartbleed漏洞是什么？ 它的基本背景和影响是什么？背景：如果要使 SSL 发挥作用，计算机需要与服务器进行通信。为此，它会发送称为“heartbeat”(心跳)的信息。he">
+    <meta name="description" content="欢迎来我的博客，这是我在学习heartbleed漏洞复现与利用问题的一些操作与收获。学习的目的是为了更好的了解这个漏洞，然后去防御它，而不是为了危害他人。实验背景：1.VMware 12 pro2.fedora 27 了解漏洞heartbleed漏洞是什么？ 它的基本背景和影响是什么？背景：如果要使 SSL 发挥作用，计算机需要与服务器进行通信。为此，它会发送称为“heartbeat”(心跳)的信">
 <meta property="og:type" content="article">
 <meta property="og:title" content="heartbleed漏洞复现与利用问题">
 <meta property="og:url" content="http://yoursite.com/2018/02/04/webs3-4/index.html">
 <meta property="og:site_name" content="让子弹飞一会">
-<meta property="og:description" content="欢迎来我的博客，这是我在学习struts2-052漏洞学习的一些操作与收获。学习的目的是为了更好的了解这个漏洞，然后去防御它，而不是为了危害他人。实验背景：1.VMware 12 pro2.fedora 27 了解漏洞heartbleed漏洞是什么？ 它的基本背景和影响是什么？背景：如果要使 SSL 发挥作用，计算机需要与服务器进行通信。为此，它会发送称为“heartbeat”(心跳)的信息。he">
+<meta property="og:description" content="欢迎来我的博客，这是我在学习heartbleed漏洞复现与利用问题的一些操作与收获。学习的目的是为了更好的了解这个漏洞，然后去防御它，而不是为了危害他人。实验背景：1.VMware 12 pro2.fedora 27 了解漏洞heartbleed漏洞是什么？ 它的基本背景和影响是什么？背景：如果要使 SSL 发挥作用，计算机需要与服务器进行通信。为此，它会发送称为“heartbeat”(心跳)的信">
 <meta property="og:locale" content="zh-CN">
 <meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-81c1d5698cecc609.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
 <meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-c48c0786b936870e.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
@@ -34,10 +34,10 @@
 <meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-97dfd4dcacedc6e7.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
 <meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-24b8c32dc01729b0.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
 <meta property="og:image" content="http://upload-images.jianshu.io/upload_images/10457296-760842c8e13e598c.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
-<meta property="og:updated_time" content="2018-02-04T08:54:26.175Z">
+<meta property="og:updated_time" content="2018-02-06T11:53:58.026Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="heartbleed漏洞复现与利用问题">
-<meta name="twitter:description" content="欢迎来我的博客，这是我在学习struts2-052漏洞学习的一些操作与收获。学习的目的是为了更好的了解这个漏洞，然后去防御它，而不是为了危害他人。实验背景：1.VMware 12 pro2.fedora 27 了解漏洞heartbleed漏洞是什么？ 它的基本背景和影响是什么？背景：如果要使 SSL 发挥作用，计算机需要与服务器进行通信。为此，它会发送称为“heartbeat”(心跳)的信息。he">
+<meta name="twitter:description" content="欢迎来我的博客，这是我在学习heartbleed漏洞复现与利用问题的一些操作与收获。学习的目的是为了更好的了解这个漏洞，然后去防御它，而不是为了危害他人。实验背景：1.VMware 12 pro2.fedora 27 了解漏洞heartbleed漏洞是什么？ 它的基本背景和影响是什么？背景：如果要使 SSL 发挥作用，计算机需要与服务器进行通信。为此，它会发送称为“heartbeat”(心跳)的信">
 <meta name="twitter:image" content="http://upload-images.jianshu.io/upload_images/10457296-81c1d5698cecc609.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240">
 
     
@@ -118,7 +118,7 @@
 		
 		</div>
 		
-		<p>欢迎来我的博客，这是我在学习struts2-052漏洞学习的一些操作与收获。学习的目的是为了更好的了解这个漏洞，然后去防御它，而不是为了危害他人。<br>实验背景：<br>1.VMware 12 pro<br>2.fedora 27</p>
+		<p>欢迎来我的博客，这是我在学习heartbleed漏洞复现与利用问题的一些操作与收获。学习的目的是为了更好的了解这个漏洞，然后去防御它，而不是为了危害他人。<br>实验背景：<br>1.VMware 12 pro<br>2.fedora 27</p>
 <h2 id="了解漏洞"><a href="#了解漏洞" class="headerlink" title="了解漏洞"></a>了解漏洞</h2><h3 id="heartbleed漏洞是什么？"><a href="#heartbleed漏洞是什么？" class="headerlink" title="heartbleed漏洞是什么？"></a>heartbleed漏洞是什么？</h3><p><img src="http://upload-images.jianshu.io/upload_images/10457296-81c1d5698cecc609.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
 <h3 id="它的基本背景和影响是什么？"><a href="#它的基本背景和影响是什么？" class="headerlink" title="它的基本背景和影响是什么？"></a>它的基本背景和影响是什么？</h3><p>背景：如果要使 SSL 发挥作用，计算机需要与服务器进行通信。为此，它会发送称为“heartbeat”(心跳)的信息。heartbeat 所做的就是向服务器发送特定信号以确定服务器是否联机。如果服务器联机，它会向计算机发送回该信号，让用户可以尽享安全的通信。计算机和服务器会定期发送 heartbeat 以确定用户和服务器没有脱机。</p>
 <p>影响：这一漏洞让任何人都能读取系统的运行内存，能使攻击者能够从内存中读取最多64 KB的数据。</p>
@@ -203,6 +203,14 @@
 	
 <nav class="article-nav clearfix">
  
+ <div class="prev" >
+ <a href="/2018/02/06/webs3-5/" title="SQL注入实践学习">
+  <strong>上一篇：</strong><br/>
+  <span>
+  SQL注入实践学习</span>
+</a>
+</div>
+
 
 <div class="next">
 <a href="/2018/02/04/webs3-3/"  title="struts2-052漏洞学习">
